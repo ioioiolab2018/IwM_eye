@@ -72,7 +72,6 @@ def process_image(red, green, blue, mask):
     # result[mask == 0] = 0
 
     plt.imshow(res2, cmap="gray")
-    plt.imsave("new", res2, cmap="gray")
     plt.show()
     return result
 
@@ -91,12 +90,15 @@ def process_image(red, green, blue, mask):
 # imageColor = np.array(imageColor)
 # x, y, z = np.shape(imageColor)
 
+for i in range(5):
+    fileName = '0' + str(i + 1) + '_h'
+    imageColor, mask, model = load_image(fileName)
+    red, green, blue = apply_mask(imageColor, mask)
+    result = process_image(red, green, blue, mask)
 
-imageColor, mask, model = load_image('05_h')
-red, green, blue = apply_mask(imageColor, mask)
-result = process_image(red, green, blue, mask)
-
-tp, fp, fn, tn = compare_images(result, model)
-print("Tp: " + str(tp), "\nFp: " + str(fp), "\nFn: " + str(fn), "\nTn: " + str(tn))
-accuracy, sensitivity, specificity = statistics(tp, fp, fn, tn)
-print("Accuracy: " + str(accuracy), "\nSensitivity: " + str(sensitivity), "\nSpecificity: " + str(specificity))
+    plt.imsave('results/' + fileName, result, cmap="gray")
+    print("================================  " + fileName + "  ================================")
+    tp, fp, fn, tn = compare_images(result, model)
+    print("Tp: " + str(tp), "\nFp: " + str(fp), "\nFn: " + str(fn), "\nTn: " + str(tn))
+    accuracy, sensitivity, specificity = statistics(tp, fp, fn, tn)
+    print("Accuracy: " + str(accuracy), "\nSensitivity: " + str(sensitivity), "\nSpecificity: " + str(specificity))
