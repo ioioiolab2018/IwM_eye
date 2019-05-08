@@ -5,6 +5,8 @@ import numpy as np
 from imageio import imsave
 from scipy import ndimage
 
+from cv2 import bitwise_and
+
 from skimage import data, img_as_ubyte
 from skimage import measure
 from skimage.exposure import rescale_intensity, equalize_adapthist
@@ -33,7 +35,7 @@ def compare_images(img, model):
                 tn += 1
             elif item == 0:
                 fn += 1
-            elif item == model_item/255:
+            elif item == model_item / 255:
                 tp += 1
             else:
                 fp += 1
@@ -42,28 +44,41 @@ def compare_images(img, model):
 
 def load_image(name):
     img = io.imread('resources/images/' + name + '.jpg')
-    # mask = io.imread('resources/masks/' + name + '.tif')
-    mask = None
-    model = io.imread('resources/model/' + name + '.tif')
+    mask = io.imread('resources/masks/' + name + '_mask.tif')
+    model = io.imread('resources/models/' + name + '.tif')
     return img, mask, model
 
+
+def apply_mask(img, mask):
+    image = np.array(img)
+    mask = np.asarray(mask)
+    mask = mask[:, :, 1]
+    red = imageColor[:, :, 0]
+    green = imageColor[:, :, 1]
+    blue = imageColor[:, :, 2]
+    red = bitwise_and(red, red, mask=mask)
+    green = bitwise_and(green, green, mask=mask)
+    blue = bitwise_and(blue, blue, mask=mask)
+    return red, green, blue
+
+
 # imageColor = data.load('C:/Users/Piotr/Documents/GitHub/IwM_eye/resources/images/05_h.jpg')
-imageColor = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/images/05_h.jpg')
+# imageColor = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/images/05_h.jpg')
 # imageColor = data.load('C:/Users/Kamil/Documents/GitHub/IwM_eye/resources/images/08_h.JPG')
 # manual = data.load('C:/Users\Piotr/Documents/GitHub/IwM_eye/resources/05_h.tif')
-model = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/05_h.tif')
+# model = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/05_h.tif')
 # mask = data.load('C:/Users/Kamil/Documents/GitHub/IwM_eye/resources/Nowy folder/im0255.ah.ppm')
 
 imageColor, mask, model = load_image('05_h')
+red, green, blue = apply_mask(imageColor, mask)
 
 imageColor = np.array(imageColor)
 x, y, z = np.shape(imageColor)
 
-green = imageColor[:, :, 1]
-
+# green = imageColor[:, :, 1]
 # green = imageColor[:, :, 1] - np.min(imageColor, axis=2)
 
-red = imageColor[:, :, 0]
+# red = imageColor[:, :, 0]
 red = rescale_intensity(red, in_range=(red.min(), red.max()))
 green = equalize_adapthist(green)
 
@@ -86,37 +101,17 @@ plt.imshow(res1, cmap="gray")
 plt.show()
 
 thresh = threshold_triangle(res1)
-res2= res1 >= thresh
-
+res2 = res1 >= thresh
 
 res2 = remove_small_objects(res2, 30, 20)
 
-TP = 0
-TN = 0
-FP = 0
-FN = 0
-
 result = np.zeros_like(res2)
-result[res2]=1
-print(model)
-for i in range(len(model)):
-    for j in range(len(model[0])):
-        if result[i][j] == 1:
-            if model[i][j] == result[i][j]:
-                TP += 1
-            else:
-                FP += 1
-        if result[i][j] == 0:
-            if model[i][j] == result[i][j]:
-                TN += 1
-            else:
-                FN += 1
+result[res2] = 1
 
 tp, fp, fn, tn = compare_images(result, model)
 print("Tp: " + str(tp), "\nFp: " + str(fp), "\nFn: " + str(fn), "\nTn: " + str(tn))
 accuracy, sensitivity, specificity = statistics(tp, fp, fn, tn)
 print("Accuracy: " + str(accuracy), "\nSensitivity: " + str(sensitivity), "\nSpecificity: " + str(specificity))
-
 
 plt.imshow(res2, cmap="gray")
 plt.imsave("new", res2, cmap="gray")
