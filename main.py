@@ -62,6 +62,35 @@ def apply_mask(img, mask):
     return red, green, blue
 
 
+def process_image(red, green, blue):
+    red = rescale_intensity(red, in_range=(red.min(), red.max()))
+    green = equalize_adapthist(green)
+    plt.imshow(green, cmap="gray")
+    plt.show()
+
+    lowpass = ndimage.gaussian_filter(green, 20)
+    green = green - lowpass
+    green = rescale_intensity(green, in_range=(green.min(), green.max()))
+    plt.imshow(green, cmap="gray")
+    plt.show()
+
+    fran = frangi(green, scale_range=(0, 6), scale_step=1)
+    res1 = fran
+    plt.imshow(res1, cmap="gray")
+    plt.show()
+
+    thresh = threshold_triangle(res1)
+    res2 = res1 >= thresh
+    res2 = remove_small_objects(res2, 30, 20)
+    result = np.zeros_like(res2)
+    result[res2] = 1
+
+    plt.imshow(res2, cmap="gray")
+    plt.imsave("new", res2, cmap="gray")
+    plt.show()
+    return result
+
+
 # imageColor = data.load('C:/Users/Piotr/Documents/GitHub/IwM_eye/resources/images/05_h.jpg')
 # imageColor = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/images/05_h.jpg')
 # imageColor = data.load('C:/Users/Kamil/Documents/GitHub/IwM_eye/resources/images/08_h.JPG')
@@ -69,50 +98,19 @@ def apply_mask(img, mask):
 # model = data.load('C:/Users/pawel/Desktop/Projekty/IwM/IwM_eye/resources/05_h.tif')
 # mask = data.load('C:/Users/Kamil/Documents/GitHub/IwM_eye/resources/Nowy folder/im0255.ah.ppm')
 
-imageColor, mask, model = load_image('05_h')
-red, green, blue = apply_mask(imageColor, mask)
-
-imageColor = np.array(imageColor)
-x, y, z = np.shape(imageColor)
-
 # green = imageColor[:, :, 1]
 # green = imageColor[:, :, 1] - np.min(imageColor, axis=2)
 
 # red = imageColor[:, :, 0]
-red = rescale_intensity(red, in_range=(red.min(), red.max()))
-green = equalize_adapthist(green)
+# imageColor = np.array(imageColor)
+# x, y, z = np.shape(imageColor)
 
-plt.imshow(green, cmap="gray")
-plt.show()
 
-lowpass = ndimage.gaussian_filter(green, 20)
-green = green - lowpass
-
-green = rescale_intensity(green, in_range=(green.min(), green.max()))
-
-plt.imshow(green, cmap="gray")
-plt.show()
-
-fran = frangi(green, scale_range=(0, 6), scale_step=1)
-
-res1 = fran
-
-plt.imshow(res1, cmap="gray")
-plt.show()
-
-thresh = threshold_triangle(res1)
-res2 = res1 >= thresh
-
-res2 = remove_small_objects(res2, 30, 20)
-
-result = np.zeros_like(res2)
-result[res2] = 1
+imageColor, mask, model = load_image('05_h')
+red, green, blue = apply_mask(imageColor, mask)
+result = process_image(red, green, blue)
 
 tp, fp, fn, tn = compare_images(result, model)
 print("Tp: " + str(tp), "\nFp: " + str(fp), "\nFn: " + str(fn), "\nTn: " + str(tn))
 accuracy, sensitivity, specificity = statistics(tp, fp, fn, tn)
 print("Accuracy: " + str(accuracy), "\nSensitivity: " + str(sensitivity), "\nSpecificity: " + str(specificity))
-
-plt.imshow(res2, cmap="gray")
-plt.imsave("new", res2, cmap="gray")
-plt.show()
