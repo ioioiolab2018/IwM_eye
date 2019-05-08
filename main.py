@@ -28,18 +28,28 @@ def statistics(tp, fp, fn, tn):
 
 def compare_images(img, model):
     tp, fp, fn, tn = 0, 0, 0, 0
-    for i, row in enumerate(img):
-        for j, item in enumerate(row):
-            model_item = model[i][j]
-            if item == 0 and item == model_item:
-                tn += 1
-            elif item == 0:
-                fn += 1
-            elif item == model_item / 255:
-                tp += 1
-            else:
-                fp += 1
-    return tp, fp, fn, tn
+    model[model > 0] = 1
+    TP = sum(img[img == model])
+    FP = sum(img[img == 1]) - TP
+    TN = -sum(img[img == model] - 1)
+    FN = sum(img[model == 0] + 1)
+    # for i, row in enumerate(img):
+    #     for j, item in enumerate(row):
+    #         model_item = model[i][j]
+    #         if item == 0 and item == model_item:
+    #             tn += 1
+    #         elif item == 0:
+    #             fn += 1
+    #         elif item == model_item:
+    #             tp += 1
+    #         else:
+    #             fp += 1
+    # print(tp == TP)
+    # print(fp == FP)
+    # print(tn == TN)
+    # print(fn == FN)
+    # return tp, fp, fn, tn
+    return TP, FP, FN, TN
 
 
 def load_image(name):
@@ -53,16 +63,18 @@ def apply_mask(img, mask):
     image = np.array(img)
     mask = np.asarray(mask)
     mask = mask[:, :, 1]
-    red = imageColor[:, :, 0]
-    green = imageColor[:, :, 1]
-    blue = imageColor[:, :, 2]
-    red = bitwise_and(red, red, mask=mask)
-    green = bitwise_and(green, green, mask=mask)
-    blue = bitwise_and(blue, blue, mask=mask)
+    red = image[:, :, 0]
+    green = image[:, :, 1]
+    blue = image[:, :, 2]
+    red[mask == 0] = 0
+    green[mask == 0] = 0
+    blue[mask == 0] = 0
     return red, green, blue
 
 
-def process_image(red, green, blue):
+def process_image(red, green, blue, mask):
+    mask = np.asarray(mask)
+    mask = mask[:, :, 1]
     red = rescale_intensity(red, in_range=(red.min(), red.max()))
     green = equalize_adapthist(green)
     plt.imshow(green, cmap="gray")
@@ -75,15 +87,18 @@ def process_image(red, green, blue):
     plt.show()
 
     fran = frangi(green, scale_range=(0, 6), scale_step=1)
-    res1 = fran
+    res1 = np.asarray(fran)
+    # res1 = fran
     plt.imshow(res1, cmap="gray")
     plt.show()
 
     thresh = threshold_triangle(res1)
     res2 = res1 >= thresh
     res2 = remove_small_objects(res2, 30, 20)
+    res2[mask == 0] = 0
     result = np.zeros_like(res2)
     result[res2] = 1
+    # result[mask == 0] = 0
 
     plt.imshow(res2, cmap="gray")
     plt.imsave("new", res2, cmap="gray")
@@ -108,7 +123,7 @@ def process_image(red, green, blue):
 
 imageColor, mask, model = load_image('05_h')
 red, green, blue = apply_mask(imageColor, mask)
-result = process_image(red, green, blue)
+result = process_image(red, green, blue, mask)
 
 tp, fp, fn, tn = compare_images(result, model)
 print("Tp: " + str(tp), "\nFp: " + str(fp), "\nFn: " + str(fn), "\nTn: " + str(tn))
