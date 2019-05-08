@@ -1,22 +1,10 @@
-import scipy
 from skimage import io
 import matplotlib.pyplot as plt
 import numpy as np
-from imageio import imsave
 from scipy import ndimage
-
-from cv2 import bitwise_and
-
-from skimage import data, img_as_ubyte
-from skimage import measure
 from skimage.exposure import rescale_intensity, equalize_adapthist
-from skimage.feature import blob_log
-from skimage.filters import sobel, gaussian, rank, threshold_otsu, frangi, threshold_local, \
-    threshold_triangle
-from skimage.transform import resize
-from skimage.morphology import disk, opening, square, erosion, black_tophat, white_tophat, closing, binary_closing, \
-    remove_small_objects, remove_small_holes
-from scipy import signal
+from skimage.filters import frangi, threshold_triangle
+from skimage.morphology import remove_small_objects
 
 
 def statistics(tp, fp, fn, tn):
@@ -27,29 +15,12 @@ def statistics(tp, fp, fn, tn):
 
 
 def compare_images(img, model):
-    tp, fp, fn, tn = 0, 0, 0, 0
     model[model > 0] = 1
-    TP = sum(img[img == model])
-    FP = sum(img[img == 1]) - TP
-    TN = -sum(img[img == model] - 1)
-    FN = sum(img[model == 0] + 1)
-    # for i, row in enumerate(img):
-    #     for j, item in enumerate(row):
-    #         model_item = model[i][j]
-    #         if item == 0 and item == model_item:
-    #             tn += 1
-    #         elif item == 0:
-    #             fn += 1
-    #         elif item == model_item:
-    #             tp += 1
-    #         else:
-    #             fp += 1
-    # print(tp == TP)
-    # print(fp == FP)
-    # print(tn == TN)
-    # print(fn == FN)
-    # return tp, fp, fn, tn
-    return TP, FP, FN, TN
+    tp = sum(img[img == model])
+    tn = -sum(img[img == model] - 1)
+    fp = sum(img[img == 1]) - tp
+    fn = sum(img[img == 0] + 1) - tn
+    return tp, fp, fn, tn
 
 
 def load_image(name):
